@@ -56,7 +56,7 @@ if(url.pathname==="/api/profile/avatar"&&request.method==="POST"){if(!originOK(r
   const me=await current(request,env);if(!me)return reply({error:"سجّل الدخول أولاً"},401);
   const q=String(url.searchParams.get("q")||"").trim().toLowerCase();if(q.length<2||q.length>80)return reply({users:[]});
   const rows=await env.DB.prepare("SELECT u.id,u.username,u.display_name,u.avatar_key,u.bio,u.city,u.service,u.is_public FROM users u WHERE (u.id=? OR u.username LIKE ?) AND (u.is_public=1 OR u.id=? OR u.username=? COLLATE NOCASE OR EXISTS(SELECT 1 FROM friends f WHERE f.user_id=? AND f.friend_id=u.id)) ORDER BY u.username LIMIT 12").bind(q,q+"%",q,q,me.id).all();
-  return reply({users:(rows.results||[]).filter(x=>x.id!==me.id).map(x=>({id:x.id,username:x.username,display_name:x.display_name,bio:x.bio||'',city:x.city||'',service:x.service||'',avatar_url:x.avatar_key?.startsWith('demo:')?x.avatar_key.slice(5):x.avatar_key?'/api/avatar/'+x.id:null}))});
+  return reply({users:(rows.results||[]).filter(x=>x.id!==me.id).map(x=>({id:x.id,username:x.username,display_name:x.display_name,bio:x.is_public?(x.bio||''):'',city:x.is_public?(x.city||''):'',service:x.is_public?(x.service||''):'',avatar_url:x.is_public?(x.avatar_key?.startsWith('demo:')?x.avatar_key.slice(5):x.avatar_key?'/api/avatar/'+x.id:null):null}))});
  }
  if(url.pathname==="/api/friends"&&request.method==="GET"){
   const me=await current(request,env);if(!me)return reply({error:"سجّل الدخول أولاً"},401);
