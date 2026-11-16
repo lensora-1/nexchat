@@ -1,0 +1,26 @@
+name: Deploy NEXCHAT to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "worker.js"
+      - "wrangler.toml"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "f9e510a0e52ea1cea7b73f095155d82c"
+          command: deploy
