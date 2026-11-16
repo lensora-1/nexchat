@@ -1,0 +1,17 @@
+name = "nexchat"
+main = "worker.js"
+compatibility_date = "2026-11-16"
+workers_dev = true
+account_id = "f9e510a0e52ea1cea7b73f095155d82c"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nexchat-main-db"
+database_id = "4a6a2b9b-ad3c-4cda-b97f-8a20a51c7b7c"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "nexchat-media"
+
+[observability]
+enabled = true
