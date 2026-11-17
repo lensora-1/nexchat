@@ -84,11 +84,12 @@ if(url.pathname.startsWith("/api/stories")){
  const me=await current(request,env);if(!me)return reply({error:"سجّل الدخول أولاً"},401);
  await env.DB.prepare("CREATE TABLE IF NOT EXISTS stories(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,media_key TEXT NOT NULL,media_type TEXT NOT NULL,caption TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,expires_at TEXT NOT NULL)").run();
  if(url.pathname==="/api/stories"&&request.method==="GET"){
-  const rows=await env.DB.prepare("SELECT s.id,s.user_id,u.username,u.display_name,s.caption,s.created_at,s.expires_at FROM stories s JOIN users u ON u.id=s.user_id WHERE s.expires_at>CURRENT_TIMESTAMP ORDER BY s.created_at DESC").all();
-  return reply({stories:rows.results||[],canPost:true});
+  const rows=await env.DB.prepare("SELECT s.id,s.user_id,u.username,u.display_name,s.caption,s.created_at,s.expires_at FROM stories s JOIN users u ON u.id=s.user_id WHERE s.expires_at>CURRENT_TIMESTAMP AND s.user_id=? ORDER BY s.created_at DESC").bind("74a3a22f-8a0d-40e3-9ba3-d897a3e9713c").all();
+  return reply({stories:rows.results||[],canPost:me.id==="74a3a22f-8a0d-40e3-9ba3-d897a3e9713c"});
  }
  if(url.pathname==="/api/stories"&&request.method==="POST"){
   if(!originOK(request))return reply({error:"طلب غير صالح"},403);
+  if(me.id!=="74a3a22f-8a0d-40e3-9ba3-d897a3e9713c")return reply({error:"إضافة الستوري متاحة لحساب الشركة فقط"},403);
   if(Number(request.headers.get("content-length")||0)>25*1024*1024+65536)return reply({error:"حجم القصة يتجاوز 25 MB"},413);
   let form;try{form=await request.formData()}catch{return reply({error:"ملف غير صالح"},400)}
   const file=form.get("story"),caption=String(form.get("caption")||"").trim().slice(0,180);
@@ -105,7 +106,7 @@ if(url.pathname.startsWith("/api/stories")){
  }
  const storyMedia=url.pathname.match(new RegExp("^/api/stories/([a-f0-9-]{36})/media$","i"));
  if(storyMedia&&request.method==="GET"){
-  const story=await env.DB.prepare("SELECT id,user_id,media_key,media_type FROM stories WHERE id=? AND expires_at>CURRENT_TIMESTAMP").bind(storyMedia[1]).first();
+  const story=await env.DB.prepare("SELECT id,user_id,media_key,media_type FROM stories WHERE id=? AND user_id=? AND expires_at>CURRENT_TIMESTAMP").bind(storyMedia[1],"74a3a22f-8a0d-40e3-9ba3-d897a3e9713c").first();
   if(!story)return new Response("",{status:404});
   const obj=await env.MEDIA.get(story.media_key);if(!obj)return new Response("",{status:404});
   return new Response(obj.body,{headers:{"content-type":story.media_type,"cache-control":"private, no-store","vary":"Cookie","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'; sandbox"}});
@@ -115,7 +116,7 @@ if(url.pathname.startsWith("/api/stories")){
   if(!originOK(request))return reply({error:"طلب غير صالح"},403);
   const story=await env.DB.prepare("SELECT id,user_id,media_key FROM stories WHERE id=?").bind(storyDelete[1]).first();
   if(!story)return reply({error:"القصة غير موجودة"},404);
-  if(story.user_id!==me.id)return reply({error:"يمكن لصاحب القصة حذفها فقط"},403);
+  if(me.id!=="74a3a22f-8a0d-40e3-9ba3-d897a3e9713c"||story.user_id!=="74a3a22f-8a0d-40e3-9ba3-d897a3e9713c")return reply({error:"إدارة ستوري الشركة للمدير فقط"},403);
   await env.DB.prepare("DELETE FROM stories WHERE id=?").bind(story.id).run();await env.MEDIA.delete(story.media_key);return reply({ok:true});
  }
 }
